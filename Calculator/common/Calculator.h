@@ -1,0 +1,111 @@
+//
+//  Calculator.h
+//  Calculator
+//
+//  Created by Markus Bröker on 11.10.17.
+//  Copyright © 2017 Markus Bröker. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import <Brokerage/Brokerage.h>
+#import "CalculatorConstants.h"
+
+/**
+ * Calculator for Crypto Currencies
+ *
+ * @author      Markus Bröker<broeker.markus@googlemail.com>
+ * @copyright   Copyright (C) 2017 4customers UG
+ */
+@interface Calculator : NSObject
+
+/**
+ * Static Constructor implemented as singleton
+ *
+ * @return id
+ */
++ (id)instance;
+
+/**
+ * Static Constructor implemented as singleton
+ *
+ * @param currencies NSArray*
+ * @return id
+ */
++ (id)instance:(NSArray *)currencies;
+
+/**
+ * Update the balance for a given asset
+ *
+ * @param asset (NSString *)
+ * @param newBalance double
+ */
+- (void)updateBalance:(NSString *)asset withBalance:(double) newBalance;
+
+/**
+ * Update the balance
+ *
+ * @param newBalance (NSDictionary *)
+ */
+- (void)updateBalances:(NSDictionary *)newBalance;
+
+/**
+ * Update the current Ratings
+ *
+ */
+- (void)updateRatings;
+
+/**
+ * Sums up the current balances of all cryptos in Fiat-Money (EUR, USD, GBP, JPY, CNY)
+ *
+ * @param currency NSString*
+ * @return double
+ */
+- (double)calculate:(NSString *)currency;
+
+/**
+ * Sums up the current balances of all cryptos in Fiat-Money (EUR, USD, GBP, JPY, CNY) with specific ratings
+ *
+ * @param ratings
+ * @param currency NSString*
+ * @return double
+ */
+- (double)calculateWithRatings:(NSDictionary *)ratings currency:(NSString *)currency;
+
+/**
+ * Calculate the BTC Price for the given ASSET
+ *
+ * @param asset NSString*
+ * @return double
+ */
+- (double)btcPriceForAsset:(NSString *)asset;
+
+/**
+ * Calculate the FIAT Price for the given ASSET with current settings(EUR, USD, GBP, CNY, JPY)
+ *
+ * @param asset NSString*
+ * @return double
+ */
+- (double)fiatPriceForAsset:(NSString *)asset;
+
+/**
+ * Calculate the current exchange factor for the given ASSET in relation to another asset
+ *
+ * @param asset NSString*
+ * @param baseAsset NSString*
+ * @return double
+ */
+- (double)factorForAsset:(NSString *)asset inRelationTo:(NSString *)baseAsset;
+
+/**
+ * Retrieve the currently active Fiat-Currency-Pair (EUR/USD) or (USD/EUR) ...
+ *
+ * @return NSArray*
+ */
+- (NSArray *)fiatCurrencies;
+
+/**
+ * Reset the app
+ */
++ (void)reset;
+
+@end

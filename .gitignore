@@ -1,0 +1,8 @@
+.hg
+.DS_Store
+.idea/
+Podfile.lock
+Calculator.xcodeproj/xcuserdata
+Calculator.xcodeproj/project.xcworkspace/xcuserdata
+
+docs/
