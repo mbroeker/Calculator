@@ -183,6 +183,7 @@
 - (double)btcPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::btcPriceForAsset:%@", asset);
 
+    if ([asset isEqualToString:ASSET_KEY(1)]) { return 1; }
     return [currentRatings[asset] doubleValue];
 }
 
@@ -208,7 +209,7 @@
 - (double)fiatPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::fiatPriceForAsset:%@", asset);
 
-    return ([currentRatings[ASSET_KEY(1)] doubleValue] * [self btcPriceForAsset:asset]);
+    return ([self btcPriceForAsset:asset] / [self btcPriceForAsset:ASSET_KEY(1)]);
 }
 
 /**

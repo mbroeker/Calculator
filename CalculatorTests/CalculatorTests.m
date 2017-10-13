@@ -57,9 +57,11 @@
     };
 
     [calculator updateBalances:dict];
+
     for (int i = 1; i <= 10; i++) {
         double sum = [calculator calculate:ASSET_KEY(i)];
-        NSLog(@"SUM %@ => %.4f", ASSET_KEY(i), sum);
+        double factor = [calculator factorForAsset:ASSET_KEY(i) inRelationTo:ASSET_KEY(3)];
+        NSLog(@"SUM %@ => %.4f : %.8f", ASSET_KEY(i), sum, factor);
     }
 
 }
