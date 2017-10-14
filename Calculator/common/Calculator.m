@@ -209,7 +209,14 @@
 - (double)fiatPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::fiatPriceForAsset:%@", asset);
 
-    return ([self btcPriceForAsset:asset] / [self btcPriceForAsset:ASSET_KEY(1)]);
+    double fiatPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
+    double assetPrice = [self btcPriceForAsset:asset];
+
+    if ([asset isEqualToString:ASSET_KEY(1)]) {
+        return fiatPrice;
+    }
+
+    return fiatPrice * assetPrice;
 }
 
 /**
@@ -251,26 +258,50 @@
     double asset9Rating = [ratings[ASSET_KEY(9)] doubleValue];
     double asset10Rating = [ratings[ASSET_KEY(10)] doubleValue];
 
-    double price1 = [balance[ASSET_KEY(1)] doubleValue] / asset1Rating;
-    double price2 = asset1Rating * [balance[ASSET_KEY(2)] doubleValue] / asset2Rating;
-    double price3 = asset1Rating * [balance[ASSET_KEY(3)] doubleValue] / asset3Rating;
-    double price4 = asset1Rating * [balance[ASSET_KEY(4)] doubleValue] / asset4Rating;
-    double price5 = asset1Rating * [balance[ASSET_KEY(5)] doubleValue] / asset5Rating;
+    double price1 = [balance[ASSET_KEY(1)] doubleValue] * asset1Rating;
+    double price2 = asset1Rating * [balance[ASSET_KEY(2)] doubleValue] * asset2Rating;
+    double price3 = asset1Rating * [balance[ASSET_KEY(3)] doubleValue] * asset3Rating;
+    double price4 = asset1Rating * [balance[ASSET_KEY(4)] doubleValue] * asset4Rating;
+    double price5 = asset1Rating * [balance[ASSET_KEY(5)] doubleValue] * asset5Rating;
 
-    double price6 = asset1Rating * [balance[ASSET_KEY(6)] doubleValue] / asset6Rating;
-    double price7 = asset1Rating * [balance[ASSET_KEY(7)] doubleValue] / asset7Rating;
-    double price8 = asset1Rating * [balance[ASSET_KEY(8)] doubleValue] / asset8Rating;
-    double price9 = asset1Rating * [balance[ASSET_KEY(9)] doubleValue] / asset9Rating;
-    double price10 = asset1Rating * [balance[ASSET_KEY(10)] doubleValue] / asset10Rating;
+    double price6 = asset1Rating * [balance[ASSET_KEY(6)] doubleValue] * asset6Rating;
+    double price7 = asset1Rating * [balance[ASSET_KEY(7)] doubleValue] * asset7Rating;
+    double price8 = asset1Rating * [balance[ASSET_KEY(8)] doubleValue] * asset8Rating;
+    double price9 = asset1Rating * [balance[ASSET_KEY(9)] doubleValue] * asset9Rating;
+    double price10 = asset1Rating * [balance[ASSET_KEY(10)] doubleValue] * asset10Rating;
 
-    // prices in fiat[0], eg EUR
+    // prices in eur
     double sum = price1 + price2 + price3 + price4 + price5 + price6 + price7 + price8 + price9 + price10;
 
-    if ([currency isEqualToString:fiatCurrencies[0]]) {
-        return sum;
+    if ([currency isEqualToString:ASSET_KEY(1)]) {
+        return sum / asset1Rating;
     }
 
-    return sum * (asset1Rating / [ratings[currency] doubleValue]);
+    return [self fiat2BTC:sum] / [ratings[currency] doubleValue];
+}
+
+/**
+ * Calculate the BTC Price from a given FiatPrice
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)fiat2BTC:(double)fiatPrice {
+    double btcPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
+
+    return fiatPrice / btcPrice;
+}
+
+/**
+ * Calculate the Fiat Price from a given BTC Price
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)btc2Fiat:(double)btcPrice {
+    double fiatPrice = 1 / [currentRatings[ASSET_KEY(1)] doubleValue];
+
+    return btcPrice / fiatPrice;
 }
 
 /**

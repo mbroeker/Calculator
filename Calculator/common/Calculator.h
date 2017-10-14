@@ -97,6 +97,22 @@
 - (double)factorForAsset:(NSString *)asset inRelationTo:(NSString *)baseAsset;
 
 /**
+ * Calculate the BTC Price from a given FiatPrice
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)fiat2BTC:(double)fiatPrice;
+
+/**
+ * Calculate the Fiat Price from a given BTC Price
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)btc2Fiat:(double)btcPrice;
+
+/**
  * Retrieve the currently active Fiat-Currency-Pair (EUR/USD) or (USD/EUR) ...
  *
  * @return NSArray*
