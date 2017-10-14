@@ -145,7 +145,7 @@
 - (void)updateRatings {
     dispatch_queue_t updateQueue = dispatch_queue_create("de.4customers.calculator.updateRatings", nil);
     dispatch_sync(updateQueue, ^{
-        NSDictionary *tickerDictionary = [Bittrex ticker:[tickerKeys allKeys] forFiatCurrencies:fiatCurrencies];
+        NSDictionary *tickerDictionary = [Bittrex ticker:fiatCurrencies];
 
         currentRatings = [[NSMutableDictionary alloc] init];
 
