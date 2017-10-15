@@ -31,4 +31,6 @@
 #define RP_REALPRICE @"realPrice"
 #define RP_CHANGE @"change"
 
+#define TRADING_WITH_CONFIRMATION @"tradingWithConfirmation"
+
 #endif

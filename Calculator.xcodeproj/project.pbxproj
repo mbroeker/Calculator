@@ -12,6 +12,14 @@
 		B2285C641F8EE44F00BB95F0 /* Calculator.m in Sources */ = {isa = PBXBuildFile; fileRef = B2285C621F8EE44F00BB95F0 /* Calculator.m */; };
 		B2285C661F8EE74600BB95F0 /* Brokerage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2285C651F8EE74600BB95F0 /* Brokerage.framework */; };
 		B2285CDB1F8F709700BB95F0 /* Brokerage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2285C651F8EE74600BB95F0 /* Brokerage.framework */; };
+		B247F1201F93D9EC00D515C4 /* Calculator+Trading.h in Headers */ = {isa = PBXBuildFile; fileRef = B247F11E1F93D9EC00D515C4 /* Calculator+Trading.h */; };
+		B247F1211F93D9EC00D515C4 /* Calculator+Trading.m in Sources */ = {isa = PBXBuildFile; fileRef = B247F11F1F93D9EC00D515C4 /* Calculator+Trading.m */; };
+		B247F1251F93DD6F00D515C4 /* Calculator+Checkpoints.h in Headers */ = {isa = PBXBuildFile; fileRef = B247F1231F93DD6F00D515C4 /* Calculator+Checkpoints.h */; };
+		B247F1261F93DD6F00D515C4 /* Calculator+Checkpoints.m in Sources */ = {isa = PBXBuildFile; fileRef = B247F1241F93DD6F00D515C4 /* Calculator+Checkpoints.m */; };
+		B247F12B1F93E7A400D515C4 /* Helper.h in Headers */ = {isa = PBXBuildFile; fileRef = B247F1271F93E7A400D515C4 /* Helper.h */; };
+		B247F12C1F93E7A400D515C4 /* Helper.m in Sources */ = {isa = PBXBuildFile; fileRef = B247F1281F93E7A400D515C4 /* Helper.m */; };
+		B247F12D1F93E7A400D515C4 /* KeychainWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = B247F1291F93E7A400D515C4 /* KeychainWrapper.h */; };
+		B247F12E1F93E7A400D515C4 /* KeychainWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = B247F12A1F93E7A400D515C4 /* KeychainWrapper.m */; };
 		B2EADEEF1F8EB567002662CE /* Calculator.h in Headers */ = {isa = PBXBuildFile; fileRef = B2EADEEE1F8EB567002662CE /* Calculator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B2EADEF61F8EB568002662CE /* Calculator.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2EADEEB1F8EB567002662CE /* Calculator.framework */; };
 		B2EADEFB1F8EB568002662CE /* CalculatorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B2EADEFA1F8EB568002662CE /* CalculatorTests.m */; };
@@ -32,6 +40,14 @@
 		B2285C611F8EE44F00BB95F0 /* Calculator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Calculator.h; sourceTree = "<group>"; };
 		B2285C621F8EE44F00BB95F0 /* Calculator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Calculator.m; sourceTree = "<group>"; };
 		B2285C651F8EE74600BB95F0 /* Brokerage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Brokerage.framework; path = "../../../../Library/Developer/Xcode/DerivedData/iBroker-Frameworks-aavlxqsexlwevagebogmhqubpexh/Build/Products/Debug/Brokerage.framework"; sourceTree = "<group>"; };
+		B247F11E1F93D9EC00D515C4 /* Calculator+Trading.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Calculator+Trading.h"; sourceTree = "<group>"; };
+		B247F11F1F93D9EC00D515C4 /* Calculator+Trading.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Calculator+Trading.m"; sourceTree = "<group>"; };
+		B247F1231F93DD6F00D515C4 /* Calculator+Checkpoints.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Calculator+Checkpoints.h"; sourceTree = "<group>"; };
+		B247F1241F93DD6F00D515C4 /* Calculator+Checkpoints.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Calculator+Checkpoints.m"; sourceTree = "<group>"; };
+		B247F1271F93E7A400D515C4 /* Helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Helper.h; sourceTree = "<group>"; };
+		B247F1281F93E7A400D515C4 /* Helper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Helper.m; sourceTree = "<group>"; };
+		B247F1291F93E7A400D515C4 /* KeychainWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeychainWrapper.h; sourceTree = "<group>"; };
+		B247F12A1F93E7A400D515C4 /* KeychainWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KeychainWrapper.m; sourceTree = "<group>"; };
 		B2EADEEB1F8EB567002662CE /* Calculator.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Calculator.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B2EADEEE1F8EB567002662CE /* Calculator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Calculator.h; sourceTree = "<group>"; };
 		B2EADEF01F8EB567002662CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -64,9 +80,17 @@
 		B2285C601F8EE44F00BB95F0 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				B247F1271F93E7A400D515C4 /* Helper.h */,
+				B247F1281F93E7A400D515C4 /* Helper.m */,
+				B247F1291F93E7A400D515C4 /* KeychainWrapper.h */,
+				B247F12A1F93E7A400D515C4 /* KeychainWrapper.m */,
 				B2285C611F8EE44F00BB95F0 /* Calculator.h */,
 				B2285C621F8EE44F00BB95F0 /* Calculator.m */,
 				43D6F124B7F44EABADAFAD97 /* CalculatorConstants.h */,
+				B247F11E1F93D9EC00D515C4 /* Calculator+Trading.h */,
+				B247F11F1F93D9EC00D515C4 /* Calculator+Trading.m */,
+				B247F1231F93DD6F00D515C4 /* Calculator+Checkpoints.h */,
+				B247F1241F93DD6F00D515C4 /* Calculator+Checkpoints.m */,
 			);
 			path = common;
 			sourceTree = "<group>";
@@ -116,7 +140,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B247F12D1F93E7A400D515C4 /* KeychainWrapper.h in Headers */,
+				B247F12B1F93E7A400D515C4 /* Helper.h in Headers */,
+				B247F1201F93D9EC00D515C4 /* Calculator+Trading.h in Headers */,
 				B2285C631F8EE44F00BB95F0 /* Calculator.h in Headers */,
+				B247F1251F93DD6F00D515C4 /* Calculator+Checkpoints.h in Headers */,
 				B2EADEEF1F8EB567002662CE /* Calculator.h in Headers */,
 				43D6F16F3DEA15890C0A8AEA /* CalculatorConstants.h in Headers */,
 			);
@@ -219,6 +247,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				B2285C641F8EE44F00BB95F0 /* Calculator.m in Sources */,
+				B247F1261F93DD6F00D515C4 /* Calculator+Checkpoints.m in Sources */,
+				B247F1211F93D9EC00D515C4 /* Calculator+Trading.m in Sources */,
+				B247F12C1F93E7A400D515C4 /* Helper.m in Sources */,
+				B247F12E1F93E7A400D515C4 /* KeychainWrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

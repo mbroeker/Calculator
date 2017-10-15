@@ -16,3 +16,5 @@ FOUNDATION_EXPORT const unsigned char CalculatorVersionString[];
 
 // Content of this Framework
 #import <Calculator/common/Calculator.h>
+#import <Calculator/common/Helper.h>
+#import <Calculator/common/KeychainWrapper.h>

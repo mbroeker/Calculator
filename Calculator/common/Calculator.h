@@ -18,6 +18,8 @@
  */
 @interface Calculator : NSObject
 
+@property NSNumber *tradingWithConfirmation;
+
 /**
  * Static Constructor implemented as singleton
  *
@@ -39,7 +41,7 @@
  * @param asset (NSString *)
  * @param newBalance double
  */
-- (void)updateBalance:(NSString *)asset withBalance:(double) newBalance;
+- (void)updateBalance:(NSString *)asset withBalance:(double)newBalance;
 
 /**
  * Update the balance
@@ -132,14 +134,60 @@
  * @param exchangeKey NSString* EXCHANGE_BITTREX | EXCHANGE_POLONIEX
  * @param update BOOL Instantly refresh the ticker keys
  */
- - (void)exchange:(NSString *)exchangeKey withUpdate:(BOOL)update;
+- (void)exchange:(NSString *)exchangeKey withUpdate:(BOOL)update;
+
+/**
+ * Return the current active exchange as id<ExchangeProtocol>
+ *
+ * @return id<ExchangeProtocol>
+ */
+- (id <ExchangeProtocol>)exchange;
 
 /**
  * Return the currently active exchange as string
  *
  * @return NSString*
  */
- - (NSString *)defaultExchange;
+- (NSString *)defaultExchange;
+
+/**
+ * Return the TickerData
+ *
+ * @return NSDictionary*
+ */
+- (NSDictionary *)tickerDictionary;
+
+/**
+ * Return the current Balances
+ *
+ * @return NSMutableDictionary*
+ */
+- (NSMutableDictionary *)balances;
+
+/**
+ * Return the current Balances
+ *
+ * @param asset
+ * @return double
+ */
+- (double)balance:(NSString *)asset;
+
+/**
+ * Get the initial ratings
+ * @return NSDictionary*
+ */
+- (NSMutableDictionary *)initialRatings;
+
+/**
+ * Get current Ratings
+ * @return NSDictionary*
+ */
+- (NSMutableDictionary *)currentRatings;
+
+/**
+ * Minimize access to the Keychain
+ */
+- (NSDictionary *)apiKey;
 
 /**
  * Reset the app
@@ -147,3 +195,6 @@
 + (void)reset;
 
 @end
+
+#import "Calculator+Checkpoints.h"
+#import "Calculator+Trading.h"

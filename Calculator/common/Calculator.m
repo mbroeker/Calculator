@@ -7,6 +7,8 @@
 //
 
 #import "Calculator.h"
+#import "Helper.h"
+#import "KeychainWrapper.h"
 
 @implementation Calculator {
 
@@ -14,7 +16,7 @@
     Broker *broker;
 
     // The Exchange to use
-    id<ExchangeProtocol> exchange;
+    id <ExchangeProtocol> exchange;
 
     // Exchange User Prefs
     NSString *defaultExchange;
@@ -23,12 +25,19 @@
     NSMutableDictionary *currentRatings;
     NSMutableDictionary *balances;
 
+    // Ticker Data
+    NSDictionary *tickerDictionary;
+
     // Ticker Mapping
     NSDictionary *tickerKeys;
     NSDictionary *tickerKeysDescription;
 
+    // Common instance vars
     NSArray *fiatCurrencies;
+    NSDictionary *keyAndSecret;
 }
+
+@synthesize tradingWithConfirmation;
 
 /**
  * Check for inf, nan or zero
@@ -148,6 +157,13 @@
         broker = [[Broker alloc] init];
         exchange = [broker exchange:defaultExchange];
 
+        tradingWithConfirmation = [defaults objectForKey:TRADING_WITH_CONFIRMATION];
+
+        if (tradingWithConfirmation == nil) {
+            tradingWithConfirmation = [NSNumber numberWithBool:YES];
+            [defaults setObject:tradingWithConfirmation forKey:TRADING_WITH_CONFIRMATION];
+        }
+
         [defaults synchronize];
 
         [self updateRatings];
@@ -157,7 +173,7 @@
 }
 
 /**
- * Update the ratings
+ * Update Ratings and Balances
  *
  * @param asset NSString*
  * @return double
@@ -165,12 +181,23 @@
 - (void)updateRatings {
     dispatch_queue_t updateQueue = dispatch_queue_create("de.4customers.calculator.updateRatings", nil);
     dispatch_sync(updateQueue, ^{
-        NSDictionary *tickerDictionary = [exchange ticker:fiatCurrencies];
-
+        tickerDictionary = [exchange ticker:fiatCurrencies];
         currentRatings = [[NSMutableDictionary alloc] init];
 
         for (id key in tickerKeys) {
             currentRatings[key] = tickerDictionary[tickerKeys[key]][DEFAULT_LAST];
+        }
+
+        NSMutableDictionary *result = [[exchange balance:[self apiKey]] mutableCopy];
+        if (result[DEFAULT_ERROR]) {
+            [Helper notificationText:@"Fetching Balance" info:result[DEFAULT_ERROR]];
+            return;
+        }
+
+        for (id key in result) {
+            // Just migrate the response to double and store them back into a number
+            double value = [result[key][DEFAULT_AVAILABLE] doubleValue];
+            balances[key] = @(value);
         }
     });
 }
@@ -181,7 +208,7 @@
  * @param asset (NSString *)
  * @param newBalance double
  */
-- (void)updateBalance:(NSString *)asset withBalance:(double) newBalance {
+- (void)updateBalance:(NSString *)asset withBalance:(double)newBalance {
     balances[asset] = [NSNumber numberWithDouble:newBalance];
 }
 
@@ -353,12 +380,13 @@
 - (void)exchange:(NSString *)exchangeKey withUpdate:(BOOL)update {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
-    id<ExchangeProtocol> newExchange = [broker exchange:exchangeKey];
+    id <ExchangeProtocol> newExchange = [broker exchange:exchangeKey];
 
     if (newExchange != nil) {
         exchange = newExchange;
-        
+        keyAndSecret = nil;
         defaultExchange = exchangeKey;
+
         [defaults setObject:defaultExchange forKey:DEFAULT_EXCHANGE];
         [defaults synchronize];
 
@@ -369,12 +397,80 @@
 }
 
 /**
+ * Return the current active exchange as id<ExchangeProtocol>
+ *
+ * @return id<ExchangeProtocol>
+ */
+- (id <ExchangeProtocol>)exchange {
+    return exchange;
+}
+
+/**
  * Return the current active exchange as string
  *
  * @return NSString*
  */
 - (NSString *)defaultExchange {
     return defaultExchange;
+}
+
+/**
+ * Get current TickerData
+ * @return NSDictionary*
+ */
+- (NSDictionary *)tickerDictionary {
+    return tickerDictionary;
+}
+
+/**
+ * Get current Balances
+ * @return NSMutableDictionary*
+ */
+- (NSMutableDictionary *)balances {
+    return balances;
+}
+
+/**
+ * Get current Balance for asset
+ * @return double*
+ */
+- (double)balance:(NSString *)asset {
+    return [balances[asset] doubleValue];
+}
+
+/**
+ * Get the initial ratings
+ * @return NSDictionary*
+ */
+- (NSMutableDictionary *)initialRatings {
+    return initialRatings;
+}
+
+/**
+ * Get current Ratings
+ * @return NSDictionary*
+ */
+- (NSMutableDictionary *)currentRatings {
+    return currentRatings;
+}
+
+/**
+ * Minimieren des Zugriffs auf den Schlüsselbund
+ */
+- (NSDictionary *)apiKey {
+    NSDebug(@"Calculator::apiKey");
+
+    if (keyAndSecret == nil) {
+        if ([defaultExchange isEqualToString:EXCHANGE_POLONIEX]) {
+            keyAndSecret = [KeychainWrapper keychain2ApiKeyAndSecret:@"POLONIEX"];
+        }
+
+        if ([defaultExchange isEqualToString:EXCHANGE_BITTREX]) {
+            keyAndSecret = [KeychainWrapper keychain2ApiKeyAndSecret:@"BITTREX"];
+        }
+    }
+
+    return keyAndSecret;
 }
 
 /**
