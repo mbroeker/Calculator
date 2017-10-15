@@ -20,7 +20,7 @@
 - (void)setUp {
     [super setUp];
 
-    calculator = [Calculator instance];
+    calculator = [Calculator instance:@[USD, EUR]];
 }
 
 - (void)tearDown {
@@ -44,8 +44,8 @@
  */
 - (void)testFiatPrice {
     for (int i = 1; i <= 10; i++) {
-        double euroPrice = [calculator fiatPriceForAsset:ASSET_KEY(i)];
-        NSLog(@"1 %@ = %.8f EUR", ASSET_KEY(i), euroPrice);
+        double fiatPrice = [calculator fiatPriceForAsset:ASSET_KEY(i)];
+        NSLog(@"1 %@ = %.8f %@", ASSET_KEY(i), fiatPrice, [calculator fiatCurrencies][0]);
     }
 }
 
@@ -53,8 +53,8 @@
  * Check the computation
  */
 - (void)testBTC2Fiat {
-    double euroPrice = [calculator btc2Fiat:1];
-    NSLog(@"1 %@ = %.8f EUR", ASSET_KEY(1), euroPrice);
+    double fiatPrice = [calculator btc2Fiat:1];
+    NSLog(@"1 %@ = %.8f %@", ASSET_KEY(1), fiatPrice, [calculator fiatCurrencies][0]);
 }
 
 /**
@@ -62,7 +62,7 @@
  */
 - (void)testFiat2BTC {
     double fiatPrice = [calculator fiat2BTC:5000];
-    NSLog(@"5000 EUR = %.8f %@", fiatPrice, ASSET_KEY(1));
+    NSLog(@"5000 %@ = %.8f %@", [calculator fiatCurrencies][0], fiatPrice, ASSET_KEY(1));
 }
 
 /**
@@ -92,6 +92,19 @@
         XCTAssertEqual(sum, factor, @"S: %.8f <> %.8f", sum, factor);
     }
 
+}
+
+/**
+ * Switch to another Exchange on next run...
+ */
+- (void)testSwitchToAnotherExchange {
+    if ([[calculator defaultExchange] isEqualToString:EXCHANGE_BITTREX]) {
+        [calculator exchange:EXCHANGE_POLONIEX withUpdate:NO];
+    } else {
+        [calculator exchange:EXCHANGE_BITTREX withUpdate:NO];
+    }
+
+    [self testCalculate];
 }
 
 @end

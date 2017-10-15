@@ -19,7 +19,7 @@
 // Shared User Defaults
 #define KEY_FIAT_CURRENCIES @"fiatCurrencies"
 #define KEY_INITIAL_RATINGS @"initialRatings"
-#define KEY_CURRENT_BALANCE @"currentBalance"
+#define KEY_CURRENT_BALANCES @"currentBalances"
 
 // CHECKPOINT KEYS
 #define CP_INITIAL_PRICE @"initialPrice"

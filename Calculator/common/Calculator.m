@@ -9,9 +9,19 @@
 #import "Calculator.h"
 
 @implementation Calculator {
+
+    // The Broker
+    Broker *broker;
+
+    // The Exchange to use
+    id<ExchangeProtocol> exchange;
+
+    // Exchange User Prefs
+    NSString *defaultExchange;
+
     NSMutableDictionary *initialRatings;
     NSMutableDictionary *currentRatings;
-    NSMutableDictionary *balance;
+    NSMutableDictionary *balances;
 
     // Ticker Mapping
     NSDictionary *tickerKeys;
@@ -83,10 +93,10 @@
 
         fiatCurrencies = currencies;
 
-        balance = [[defaults objectForKey:KEY_CURRENT_BALANCE] mutableCopy];
+        balances = [[defaults objectForKey:KEY_CURRENT_BALANCES] mutableCopy];
 
-        if (balance == nil) {
-            balance = [@{
+        if (balances == nil) {
+            balances = [@{
                 ASSET_KEY(1): @0.0,
                 ASSET_KEY(2): @0.0,
                 ASSET_KEY(3): @0.0,
@@ -99,7 +109,7 @@
                 ASSET_KEY(10): @0.0,
             } mutableCopy];
 
-            [defaults setObject:balance forKey:KEY_CURRENT_BALANCE];
+            [defaults setObject:balances forKey:KEY_CURRENT_BALANCES];
         }
 
         tickerKeys = @{
@@ -128,6 +138,16 @@
             ASSET_DESC(10): ASSET_KEY(10),
         };
 
+        defaultExchange = [defaults objectForKey:DEFAULT_EXCHANGE];
+
+        if (defaultExchange == nil) {
+            defaultExchange = EXCHANGE_BITTREX;
+            [defaults setObject:defaultExchange forKey:DEFAULT_EXCHANGE];
+        }
+
+        broker = [[Broker alloc] init];
+        exchange = [broker exchange:defaultExchange];
+
         [defaults synchronize];
 
         [self updateRatings];
@@ -145,7 +165,7 @@
 - (void)updateRatings {
     dispatch_queue_t updateQueue = dispatch_queue_create("de.4customers.calculator.updateRatings", nil);
     dispatch_sync(updateQueue, ^{
-        NSDictionary *tickerDictionary = [Bittrex ticker:fiatCurrencies];
+        NSDictionary *tickerDictionary = [exchange ticker:fiatCurrencies];
 
         currentRatings = [[NSMutableDictionary alloc] init];
 
@@ -162,7 +182,7 @@
  * @param newBalance double
  */
 - (void)updateBalance:(NSString *)asset withBalance:(double) newBalance {
-    balance[asset] = [NSNumber numberWithDouble:newBalance];
+    balances[asset] = [NSNumber numberWithDouble:newBalance];
 }
 
 /**
@@ -170,8 +190,8 @@
  *
  * @param newBalance (NSDictionary *)
  */
-- (void)updateBalances:(NSDictionary *)newBalance {
-    balance = [newBalance mutableCopy];
+- (void)updateBalances:(NSDictionary *)newBalances {
+    balances = [newBalances mutableCopy];
 }
 
 /**
@@ -258,17 +278,17 @@
     double asset9Rating = [ratings[ASSET_KEY(9)] doubleValue];
     double asset10Rating = [ratings[ASSET_KEY(10)] doubleValue];
 
-    double price1 = [balance[ASSET_KEY(1)] doubleValue] * asset1Rating;
-    double price2 = asset1Rating * [balance[ASSET_KEY(2)] doubleValue] * asset2Rating;
-    double price3 = asset1Rating * [balance[ASSET_KEY(3)] doubleValue] * asset3Rating;
-    double price4 = asset1Rating * [balance[ASSET_KEY(4)] doubleValue] * asset4Rating;
-    double price5 = asset1Rating * [balance[ASSET_KEY(5)] doubleValue] * asset5Rating;
+    double price1 = [balances[ASSET_KEY(1)] doubleValue] * asset1Rating;
+    double price2 = asset1Rating * [balances[ASSET_KEY(2)] doubleValue] * asset2Rating;
+    double price3 = asset1Rating * [balances[ASSET_KEY(3)] doubleValue] * asset3Rating;
+    double price4 = asset1Rating * [balances[ASSET_KEY(4)] doubleValue] * asset4Rating;
+    double price5 = asset1Rating * [balances[ASSET_KEY(5)] doubleValue] * asset5Rating;
 
-    double price6 = asset1Rating * [balance[ASSET_KEY(6)] doubleValue] * asset6Rating;
-    double price7 = asset1Rating * [balance[ASSET_KEY(7)] doubleValue] * asset7Rating;
-    double price8 = asset1Rating * [balance[ASSET_KEY(8)] doubleValue] * asset8Rating;
-    double price9 = asset1Rating * [balance[ASSET_KEY(9)] doubleValue] * asset9Rating;
-    double price10 = asset1Rating * [balance[ASSET_KEY(10)] doubleValue] * asset10Rating;
+    double price6 = asset1Rating * [balances[ASSET_KEY(6)] doubleValue] * asset6Rating;
+    double price7 = asset1Rating * [balances[ASSET_KEY(7)] doubleValue] * asset7Rating;
+    double price8 = asset1Rating * [balances[ASSET_KEY(8)] doubleValue] * asset8Rating;
+    double price9 = asset1Rating * [balances[ASSET_KEY(9)] doubleValue] * asset9Rating;
+    double price10 = asset1Rating * [balances[ASSET_KEY(10)] doubleValue] * asset10Rating;
 
     // prices in eur
     double sum = price1 + price2 + price3 + price4 + price5 + price6 + price7 + price8 + price9 + price10;
@@ -316,6 +336,48 @@
 }
 
 /**
+ * Get a reference to the broker
+ *
+ * @return Broker
+ */
+- (id)broker {
+    return broker;
+}
+
+/**
+ * Switch to another Exchange
+ *
+ * @param exchangeKey (NSString *) EXCHANGE_BITTREX | EXCHANGE_POLONIEX
+ * @param update (BOOL) - Instantly refresh the ticker keys
+ */
+- (void)exchange:(NSString *)exchangeKey withUpdate:(BOOL)update {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    id<ExchangeProtocol> newExchange = [broker exchange:exchangeKey];
+
+    if (newExchange != nil) {
+        exchange = newExchange;
+        
+        defaultExchange = exchangeKey;
+        [defaults setObject:defaultExchange forKey:DEFAULT_EXCHANGE];
+        [defaults synchronize];
+
+        if (update) {
+            [self updateRatings];
+        }
+    }
+}
+
+/**
+ * Return the current active exchange as string
+ *
+ * @return NSString*
+ */
+- (NSString *)defaultExchange {
+    return defaultExchange;
+}
+
+/**
  * Static Reset-Method for Clean-Up
  *
  */
@@ -325,7 +387,7 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     [defaults removeObjectForKey:KEY_CURRENT_ASSETS];
-    [defaults removeObjectForKey:KEY_CURRENT_BALANCE];
+    [defaults removeObjectForKey:KEY_CURRENT_BALANCES];
     [defaults removeObjectForKey:KEY_FIAT_CURRENCIES];
     [defaults removeObjectForKey:KEY_INITIAL_RATINGS];
 

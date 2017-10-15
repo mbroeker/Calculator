@@ -120,6 +120,28 @@
 - (NSArray *)fiatCurrencies;
 
 /**
+ * Get a reference to the broker
+ *
+ * @return Broker
+ */
+- (id)broker;
+
+/**
+ * Switch to another Exchange
+ *
+ * @param exchangeKey NSString* EXCHANGE_BITTREX | EXCHANGE_POLONIEX
+ * @param update BOOL Instantly refresh the ticker keys
+ */
+ - (void)exchange:(NSString *)exchangeKey withUpdate:(BOOL)update;
+
+/**
+ * Return the currently active exchange as string
+ *
+ * @return NSString*
+ */
+ - (NSString *)defaultExchange;
+
+/**
  * Reset the app
  */
 + (void)reset;
