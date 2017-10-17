@@ -18,7 +18,18 @@
  */
 @interface Calculator : NSObject
 
+@property NSMutableDictionary *initialRatings;
+@property NSMutableDictionary *currentRatings;
+@property NSMutableDictionary *balances;
+
 @property NSNumber *tradingWithConfirmation;
+
+/**
+ * Check for inf, nan or zero
+ *
+ * @param value BOOL
+ */
++ (BOOL)zeroNanOrInfinity:(double)value;
 
 /**
  * Static Constructor implemented as singleton
@@ -171,18 +182,6 @@
  * @return double
  */
 - (double)balance:(NSString *)asset;
-
-/**
- * Get the initial ratings
- * @return NSDictionary*
- */
-- (NSMutableDictionary *)initialRatings;
-
-/**
- * Get current Ratings
- * @return NSDictionary*
- */
-- (NSMutableDictionary *)currentRatings;
 
 /**
  * Minimize access to the Keychain

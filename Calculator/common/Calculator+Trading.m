@@ -20,9 +20,8 @@
     NSDebug(@"Calculator::realprices");
 
     NSMutableDictionary *volumes = [[NSMutableDictionary alloc] init];
-    NSDictionary *ticker = [self tickerDictionary];
 
-    for (id key in ticker) {
+    for (id key in self.currentRatings) {
         double base = [key[DEFAULT_BASE_VOLUME] doubleValue];
         double quote = [key[DEFAULT_QUOTE_VOLUME] doubleValue];
 
@@ -35,7 +34,7 @@
     NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
 
     for (id key in volumes) {
-        if ([key isEqualToString:ASSET_KEY(1)]) {
+        if ([key isEqualToString:ASSET_KEY]) {
             continue;
         }
 
@@ -82,8 +81,6 @@
  * @return NSString*
  */
 - (NSString *)autoBuy:(NSString *)cAsset amount:(double)wantedAmount {
-    NSDebug(@"Calculator::autoBuy:%@ amount:%8f", cAsset, wantedAmount);
-
     return [self autoBuy:cAsset amount:wantedAmount withRate:0.0];
 }
 
@@ -96,9 +93,11 @@
  * @return NSString*
  */
 - (NSString *)autoBuy:(NSString *)cAsset amount:(double)wantedAmount withRate:(double)wantedRate {
-    NSDebug(@"Calculator::autoBuy:%@ amount:%8f withRate:%.8f", cAsset, wantedAmount, wantedRate);
+    if ([self balance:ASSET_KEY] < 0.00050000) {
+        return nil;
+    }
 
-    NSDictionary *apiKey = [self apiKey];
+    NSDebug(@"Calculator::autoBuy:%@ amount:%8f withRate:%.8f => %.8f BTC", cAsset, wantedAmount, wantedRate, [self balance:ASSET_KEY]);
 
     double feeAsFactor = 1.0;
 
@@ -107,67 +106,73 @@
         feeAsFactor = 0.9975;
     }
 
-    if (apiKey) {
+    NSDictionary *apiKey = [self apiKey];
+    if (!apiKey) {
         return nil;
     }
 
     NSArray *fiatCurrencies = [self fiatCurrencies];
     NSMutableDictionary *currentRatings = [self currentRatings];
 
-    double btcPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+
+    double btcPrice = [currentRatings[masterKey] doubleValue];
     double assetPrice = [currentRatings[cAsset] doubleValue];
     double cRate = wantedRate;
 
     if (cRate == 0.0) {
-        cRate = btcPrice / assetPrice;
+        cRate = assetPrice;
     }
 
-    // Bestimme die maximale Anzahl an ASSET_KEY(1)'s, die verkauft werden können...
-    double amountMax = feeAsFactor * ([self balance:ASSET_KEY(1)] / cRate);
+    // Bestimme die maximale Anzahl an ASSET_KEY's, die verkauft werden können...
+    double amountMax = feeAsFactor * ([self balance:ASSET_KEY] / cRate);
     double amount = amountMax;
 
     if (wantedAmount > 0) {
         amount = wantedAmount;
     }
 
-    if ([cAsset isEqualToString:ASSET_KEY(1)] || [cAsset isEqualToString:fiatCurrencies[0]] || [cAsset isEqualToString:fiatCurrencies[1]]) {
-        // Illegale Kombination ASSET_KEY(1)_(cAsset)
+    if ([cAsset isEqualToString:masterKey] || [cAsset isEqualToString:fiatCurrencies[0]] || [cAsset isEqualToString:fiatCurrencies[1]]) {
+        // Illegale Kombination ASSET_KEY_(cAsset)
         return nil;
     }
 
     // Es kann maximal für amountMax gekauft werden...
     if (amount > amountMax) {
-        NSString *mText = NSLocalizedString(@"not_enough_btc", @"Zu wenig BTC");
-        NSString *iText = NSLocalizedString(@"not_enough_btc_long", @"Sie haben zu wenig BTC zum Kauf");
+        NSString *mText = @"Not enough BTC";
+        NSString *iText = @"You do not have enough BTC for this trade";
         [Helper notificationText:mText info:iText];
         return nil;
     }
 
     // Sollte einer dieser Beträge negativ sein, wird die Transaktion verhindert
     if (amount <= 0 || btcPrice <= 0 || assetPrice <= 0 || cRate <= 0) {
-        NSString *mText = NSLocalizedString(@"not_enough_btc", @"Zu wenig BTC");
-        NSString *iText = NSLocalizedString(@"not_enough_btc_long", @"Sie haben zu wenig BTC zum Kauf");
+        NSString *mText = @"Not enough BTC";
+        NSString *iText = @"You do not have enough BTC for this trade";
         [Helper notificationText:mText info:iText];
         return nil;
     }
 
-    NSString *text = [NSString stringWithFormat:NSLocalizedString(@"buy_with_amount_asset_and_rate", @"Kaufe %.4f %@ für %.8f das Stück"), amount, cAsset, cRate];
+    NSString *assetKey = [cAsset componentsSeparatedByString:@"_"][1];
+    NSString *text = [NSString stringWithFormat:@"Buy %.4f %@ for %.8f each", amount, assetKey, cRate];
 
     // Bei 0 gibts eine Kaufbestätigung, bei < 0 wird instant gekauft
     if (wantedAmount >= 0) {
-        if ([Helper messageText:NSLocalizedString(@"buy_confirmation", "Kaufbestätigung") info:text] != NSAlertFirstButtonReturn) {
-            // Abort Buy
-            return nil;
-        }
+        __block BOOL abort = NO;
+        dispatch_sync(dispatch_get_main_queue(), ^() {
+            if ([Helper messageText:@"ORDER CONFIRMATION" info:text] == NSAlertFirstButtonReturn) {
+                abort = YES;
+            }
+        });
+
+        if (abort) { return nil; }
     }
 
-    NSString *cPair = [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), cAsset];
-
     id <ExchangeProtocol> exchange = [self exchange];
-    NSDictionary *order = [exchange buy:apiKey currencyPair:cPair amount:amount rate:cRate];
+    NSDictionary *order = [exchange buy:apiKey currencyPair:cAsset amount:amount rate:cRate];
 
     if (order[DEFAULT_ERROR]) {
-        [Helper notificationText:NSLocalizedString(@"error", "Fehler") info:order[DEFAULT_ERROR]];
+        [Helper notificationText:@"Error" info:order[DEFAULT_ERROR]];
         return nil;
     }
 
@@ -188,8 +193,6 @@
  * @return NSString*
  */
 - (NSString *)autoSell:(NSString *)cAsset amount:(double)wantedAmount {
-    NSDebug(@"Calculator::autoSell:%@ amount:%8f", cAsset, wantedAmount);
-
     return [self autoSell:cAsset amount:wantedAmount withRate:0.0];
 }
 
@@ -220,52 +223,62 @@
     NSArray *fiatCurrencies = [self fiatCurrencies];
     NSMutableDictionary *currentRatings = [self currentRatings];
 
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    NSString *assetKey = [cAsset componentsSeparatedByString:@"_"][1];
+
     // Bestimme die maximale Anzahl an Assets, die verkauft werden können...
-    double amountMax = feeAsFactor * [self balance:cAsset];
+    double amountMax = feeAsFactor * [self balance:assetKey];
     double amount = amountMax;
 
-    double btcPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
+    double btcPrice = [currentRatings[masterKey] doubleValue];
     double assetPrice = [currentRatings[cAsset] doubleValue];
 
     if (wantedAmount > 0) {
         amount = wantedAmount;
     }
 
-    if ([cAsset isEqualToString:ASSET_KEY(1)] || [cAsset isEqualToString:fiatCurrencies[0]] || [cAsset isEqualToString:fiatCurrencies[1]]) {
-        // Illegale Kombination ASSET_KEY(1)_(cAsset)
+    if ([cAsset isEqualToString:masterKey] || [cAsset isEqualToString:fiatCurrencies[0]] || [cAsset isEqualToString:fiatCurrencies[1]]) {
+        // Illegale Kombination ASSET_KEY_(cAsset)
         return nil;
     }
 
     double cRate = wantedRate;
 
     if (cRate == 0.0) {
-        cRate = btcPrice / assetPrice;
+        cRate = assetPrice;
     }
+
+    // DUST TRADE 50k Satoshi
+    if (([self balance:assetKey] * cRate) < 0.00050000) { return nil; }
 
     // Sollte einer dieser Beträge negativ sein, wird die Transaktion verhindert
     if (amount > amountMax || amount <= 0 || btcPrice <= 0 || assetPrice <= 0 || cRate <= 0) {
-        NSString *mText = [NSString stringWithFormat:NSLocalizedString(@"not_enough_asset_param", @"Zu wenig %@"), cAsset];
-        NSString *iText = [NSString stringWithFormat:NSLocalizedString(@"not_enough_asset_long_param", @"Zu wenig %@ zum Verkaufen"), cAsset];
+        NSString *mText = [NSString stringWithFormat:@"Not enough %@", cAsset];
+        NSString *iText = [NSString stringWithFormat:@"You do not have enough %@ for this trade", cAsset];
         [Helper notificationText:mText info:iText];
         return nil;
     }
 
-    NSString *text = [NSString stringWithFormat:NSLocalizedString(@"sell_with_amount_asset_and_rate", @"Verkaufe %.4f %@ für %.8f das Stück"), amount, cAsset, cRate];
+    NSString *text = [NSString stringWithFormat:@"Sell %.4f %@ for %.8f each", amount, assetKey, cRate];
+
 
     // Bei 0 gibts eine Verkaufsbestätigung, bei < 0 wird instant gekauft
     if (wantedAmount >= 0) {
-        if ([Helper messageText:NSLocalizedString(@"sell_confirmation", @"Verkaufsbestätigung") info:text] != NSAlertFirstButtonReturn) {
-            // Abort Sell
-            return nil;
-        }
+        __block BOOL abort = NO;
+        dispatch_sync(dispatch_get_main_queue(), ^() {
+            if ([Helper messageText:@"ORDER CONFIRMATION" info:text] == NSAlertFirstButtonReturn) {
+                abort = YES;
+            }
+        });
+
+        if (abort) { return nil; }
     }
 
-    NSString *cPair = [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), cAsset];
     id <ExchangeProtocol> exchange = [self exchange];
-    NSDictionary *order = [exchange sell:apiKey currencyPair:cPair amount:amount rate:cRate];
+    NSDictionary *order = [exchange sell:apiKey currencyPair:cAsset amount:amount rate:cRate];
 
     if (order[DEFAULT_ERROR]) {
-        [Helper notificationText:NSLocalizedString(@"error", "Fehler") info:order[DEFAULT_ERROR]];
+        [Helper notificationText:@"Error" info:order[DEFAULT_ERROR]];
         return nil;
     }
 
@@ -296,8 +309,8 @@
     if ([self autoBuy:cAsset amount:ask] != nil) {
         lastBoughtAsset = cAsset;
 
-        // Aktualisiere alle Checkpoints
-        [self updateCheckpointForAsset:DASHBOARD withBTCUpdate:YES];
+        // Aktualisiere den Checkpoint
+        [self updateCheckpointForAsset:cAsset withBTCUpdate:YES];
     }
 }
 
@@ -310,9 +323,10 @@
     NSDebug(@"Calculator::autoSellAll:%@", cAsset);
 
     double ask = ([[self tradingWithConfirmation] boolValue]) ? 0 : -1;
+
     if ([self autoSell:cAsset amount:ask] != nil) {
-        // Aktualisiere alle Checkpoints
-        [self updateCheckpointForAsset:DASHBOARD withBTCUpdate:YES];
+        // Aktualisiere den Checkpoint
+        [self updateCheckpointForAsset:cAsset withBTCUpdate:YES];
     }
 }
 
@@ -325,20 +339,19 @@
     NSDebug(@"Calculator::sellWithProfitInEuro:%.4f", wantedEuros);
 
     NSArray *fiatCurrencies = [self fiatCurrencies];
-    NSMutableDictionary *balances = [self balances];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
 
-    for (id key in balances) {
-        if ([key isEqualToString:ASSET_KEY(1)]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[0]]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[1]]) { continue; }
+    for (id key in self.currentRatings) {
+        if ([key isEqualToString:masterKey]) { continue; }
 
+        NSString *currentKey = [key componentsSeparatedByString:@"_"][1];
         NSDictionary *checkpoint = [self checkpointForAsset:key];
 
         double initialPrice = [checkpoint[CP_INITIAL_PRICE] doubleValue];
         double currentPrice = [checkpoint[CP_CURRENT_PRICE] doubleValue];
 
-        double initialBalanceInEUR = initialPrice * [self balance:key];
-        double currentBalanceInEUR = currentPrice * [self balance:key];
+        double initialBalanceInEUR = [self btc2Fiat:initialPrice * [self balance:currentKey]];
+        double currentBalanceInEUR = [self btc2Fiat:currentPrice * [self balance:currentKey]];
 
         double gain = currentBalanceInEUR - initialBalanceInEUR;
 
@@ -349,7 +362,7 @@
 }
 
 /**
- * Verkaufe Altcoins mit mindestens 1 Euro im Bestand, deren Exchange-Rate um "wantedPercent" Prozent gestiegen ist...
+ * Verkaufe Altcoins, deren Exchange-Rate um "wantedPercent" Prozent gestiegen ist...
  *
  * @param wantedPercent double
  */
@@ -357,29 +370,31 @@
     NSDebug(@"Calculator::sellWithProfitInPercent:%.4f %%", wantedPercent);
 
     NSArray *fiatCurrencies = [self fiatCurrencies];
-    NSMutableDictionary *balances = [self balances];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
 
-    for (id key in balances) {
-        if ([key isEqualToString:ASSET_KEY(1)]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[0]]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[1]]) { continue; }
+    for (id key in self.currentRatings) {
+        if ([key isEqualToString:masterKey]) { continue; }
 
+        NSString *currentKey = [key componentsSeparatedByString:@"_"][1];
         NSDictionary *checkpoint = [self checkpointForAsset:key];
-        NSDictionary *btcCheckpoint = [self checkpointForAsset:ASSET_KEY(1)];
+        NSDictionary *btcCheckpoint = [self checkpointForAsset:masterKey];
 
         double currentPrice = [checkpoint[CP_CURRENT_PRICE] doubleValue];
         double btcPercent = [btcCheckpoint[CP_PERCENT] doubleValue];
         double percent = [checkpoint[CP_PERCENT] doubleValue];
 
         double effectiveBTCPercent = percent - btcPercent;
-        double balance = currentPrice * [self balance:key];
+        double amount = currentPrice * [self balance:currentKey];
+
+        // DUST TRADE 50k Satoshi
+        if (amount < 0.00050000) { continue; }
 
         // Security Feature: We want more, not less
         if (effectiveBTCPercent < 0) {
             continue;
         }
 
-        if ((effectiveBTCPercent > wantedPercent) && (balance > 1.0)) {
+        if ((effectiveBTCPercent > wantedPercent)) {
             [self autoSellAll:key];
         }
     }
@@ -394,19 +409,17 @@
     NSDebug(@"Calculator::sellByInvestors:%.4f %%", wantedPercent);
 
     NSDictionary *currencyUnits = [self realChanges];
-
-    NSMutableDictionary *balances = [self balances];
-
     NSNumber *lowest = [[currencyUnits allValues] valueForKeyPath:@"@min.self"];
 
     if (lowest != nil) {
         NSString *lowestKey = [currencyUnits allKeysForObject:lowest][0];
         double investorsRate = [currencyUnits[lowestKey] doubleValue];
 
-        double price = [balances[lowestKey] doubleValue] * [self btcPriceForAsset:lowestKey];
+        NSString *assetKey = [lowestKey componentsSeparatedByString:@"_"][1];
+        double amount = [self balance:assetKey] * [self btcPriceForAsset:lowestKey];
 
-        // Wir verkaufen keinen Sternenstaub...
-        if (price < 0.0001) { return; }
+        // DUST TRADE 50k Satoshi
+        if (amount < 0.00050000) { return; }
 
         // Verkaufe auf Grundlage der aktuellen Investoren-Rate
         if (investorsRate < wantedPercent) {
@@ -424,21 +437,20 @@
 - (void)buyWithProfitInPercent:(double)wantedPercent andInvestmentRate:(double)wantedRate {
     NSDebug(@"Calculator::buyWithProfitInPercent:%.4f %% andRate:%.8f", wantedPercent, wantedRate);
 
-    double balance = [self balance:ASSET_KEY(1)];
+    double balance = [self balance:ASSET_KEY];
     NSDictionary *realChanges = [self realChanges];
 
-    if (balance < 0.0001) { return; }
+    if (balance < 0.00050000) { return; }
 
     NSArray *fiatCurrencies = [self fiatCurrencies];
-    NSMutableDictionary *balances = [self balances];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
 
-    for (id key in balances) {
-        if ([key isEqualToString:ASSET_KEY(1)]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[0]]) { continue; }
-        if ([key isEqualToString:fiatCurrencies[1]]) { continue; }
+    for (id key in self.currentRatings) {
+        if ([key isEqualToString:masterKey]) { continue; }
 
-        NSDictionary *checkpoint = [self checkpointForAsset:key];
-        NSDictionary *btcCheckpoint = [self checkpointForAsset:ASSET_KEY(1)];
+        NSString *currentKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, key];
+        NSDictionary *btcCheckpoint = [self checkpointForAsset:masterKey];
+        NSDictionary *checkpoint = [self checkpointForAsset:currentKey];
 
         double btcPercent = [btcCheckpoint[CP_PERCENT] doubleValue];
         double percent = [checkpoint[CP_PERCENT] doubleValue];

@@ -20,7 +20,7 @@
 - (void)setUp {
     [super setUp];
 
-    calculator = [Calculator instance:@[USD, EUR]];
+    calculator = [Calculator instance:@[EUR, USD]];
 }
 
 - (void)tearDown {
@@ -33,9 +33,10 @@
  * Check the computation
  */
 - (void)testBTCPrice {
-    for (int i = 1; i <= 10; i++) {
-        double btcPrice = [calculator btcPriceForAsset:ASSET_KEY(i)];
-        NSLog(@"1 %@ = %.8f %@", ASSET_KEY(i), btcPrice, ASSET_KEY(1));
+    for (id key in [calculator currentRatings]) {
+        NSString *asset = [key componentsSeparatedByString:@"_"][1];
+        double btcPrice = [calculator btcPriceForAsset:key];
+        NSLog(@"1 %@ = %.8f %@", asset, btcPrice, ASSET_KEY);
     }
 }
 
@@ -43,9 +44,9 @@
  * Check the computation
  */
 - (void)testFiatPrice {
-    for (int i = 1; i <= 10; i++) {
-        double fiatPrice = [calculator fiatPriceForAsset:ASSET_KEY(i)];
-        NSLog(@"1 %@ = %.8f %@", ASSET_KEY(i), fiatPrice, [calculator fiatCurrencies][0]);
+    for (id key in [calculator currentRatings]) {
+        double fiatPrice = [calculator fiatPriceForAsset:key];
+        NSLog(@"1 %@ = %.8f %@", key, fiatPrice, [calculator fiatCurrencies][0]);
     }
 }
 
@@ -54,7 +55,7 @@
  */
 - (void)testBTC2Fiat {
     double fiatPrice = [calculator btc2Fiat:1];
-    NSLog(@"1 %@ = %.8f %@", ASSET_KEY(1), fiatPrice, [calculator fiatCurrencies][0]);
+    NSLog(@"1 %@ = %.8f %@", ASSET_KEY, fiatPrice, [calculator fiatCurrencies][0]);
 }
 
 /**
@@ -62,49 +63,16 @@
  */
 - (void)testFiat2BTC {
     double fiatPrice = [calculator fiat2BTC:5000];
-    NSLog(@"5000 %@ = %.8f %@", [calculator fiatCurrencies][0], fiatPrice, ASSET_KEY(1));
+    NSLog(@"5000 %@ = %.8f %@", [calculator fiatCurrencies][0], fiatPrice, ASSET_KEY);
 }
 
-/**
- * Check the computation
- */
 - (void)testCalculate {
-    NSDictionary *dict = @{
-        ASSET_KEY(1): @(1),
-        ASSET_KEY(2): @(0),
-        ASSET_KEY(3): @(0),
-        ASSET_KEY(4): @(0),
-        ASSET_KEY(5): @(0),
-        ASSET_KEY(6): @(0),
-        ASSET_KEY(7): @(0),
-        ASSET_KEY(8): @(0),
-        ASSET_KEY(9): @(0),
-        ASSET_KEY(10): @(0),
-    };
+    for (id key in [calculator currentRatings]) {
+        double sum = [calculator calculate:key];
+        NSLog(@"Sum: %@ => %.8f", key, sum);
 
-    [calculator updateBalances:dict];
-
-    for (int i = 1; i <= 10; i++) {
-        double sum = [calculator calculate:ASSET_KEY(i)];
-        double factor = [calculator factorForAsset:ASSET_KEY(i) inRelationTo:ASSET_KEY(1)];
-
-        NSLog(@"S: %.8f == %.8f", sum, factor);
-        XCTAssertEqual(sum, factor, @"S: %.8f <> %.8f", sum, factor);
+        if (isinf(sum)) { break; }
     }
-
-}
-
-/**
- * Switch to another Exchange on next run...
- */
-- (void)testSwitchToAnotherExchange {
-    if ([[calculator defaultExchange] isEqualToString:EXCHANGE_BITTREX]) {
-        [calculator exchange:EXCHANGE_POLONIEX withUpdate:NO];
-    } else {
-        [calculator exchange:EXCHANGE_BITTREX withUpdate:NO];
-    }
-
-    [self testCalculate];
 }
 
 @end

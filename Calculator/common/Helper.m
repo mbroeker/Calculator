@@ -68,14 +68,13 @@
     NSAlert *msg = [[NSAlert alloc] init];
 
     [msg setAlertStyle:NSInformationalAlertStyle];
-    [msg addButtonWithTitle:NSLocalizedString(@"acknowledge", @"Bestätigen"])];
-    [msg addButtonWithTitle:NSLocalizedString(@"abort", @"Verwerfen"])];
+    [msg addButtonWithTitle:@"Acknowledge"];
+    [msg addButtonWithTitle:@"Abort"];
 
     msg.messageText = message;
     msg.informativeText = info;
 
     return [msg runModal];
-
 }
 
 /**

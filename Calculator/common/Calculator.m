@@ -21,22 +21,17 @@
     // Exchange User Prefs
     NSString *defaultExchange;
 
-    NSMutableDictionary *initialRatings;
-    NSMutableDictionary *currentRatings;
-    NSMutableDictionary *balances;
-
     // Ticker Data
     NSDictionary *tickerDictionary;
-
-    // Ticker Mapping
-    NSDictionary *tickerKeys;
-    NSDictionary *tickerKeysDescription;
 
     // Common instance vars
     NSArray *fiatCurrencies;
     NSDictionary *keyAndSecret;
 }
 
+@synthesize currentRatings;
+@synthesize initialRatings;
+@synthesize balances;
 @synthesize tradingWithConfirmation;
 
 /**
@@ -102,50 +97,9 @@
 
         fiatCurrencies = currencies;
 
-        balances = [[defaults objectForKey:KEY_CURRENT_BALANCES] mutableCopy];
-
-        if (balances == nil) {
-            balances = [@{
-                ASSET_KEY(1): @0.0,
-                ASSET_KEY(2): @0.0,
-                ASSET_KEY(3): @0.0,
-                ASSET_KEY(4): @0.0,
-                ASSET_KEY(5): @0.0,
-                ASSET_KEY(6): @0.0,
-                ASSET_KEY(7): @0.0,
-                ASSET_KEY(8): @0.0,
-                ASSET_KEY(9): @0.0,
-                ASSET_KEY(10): @0.0,
-            } mutableCopy];
-
-            [defaults setObject:balances forKey:KEY_CURRENT_BALANCES];
-        }
-
-        tickerKeys = @{
-            ASSET_KEY(1): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), fiatCurrencies[0]],
-            ASSET_KEY(2): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(2)],
-            ASSET_KEY(3): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(3)],
-            ASSET_KEY(4): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(4)],
-            ASSET_KEY(5): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(5)],
-            ASSET_KEY(6): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(6)],
-            ASSET_KEY(7): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(7)],
-            ASSET_KEY(8): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(8)],
-            ASSET_KEY(9): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(9)],
-            ASSET_KEY(10): [NSString stringWithFormat:@"%@_%@", ASSET_KEY(1), ASSET_KEY(10)],
-        };
-
-        tickerKeysDescription = @{
-            ASSET_DESC(1): ASSET_KEY(1),
-            ASSET_DESC(2): ASSET_KEY(2),
-            ASSET_DESC(3): ASSET_KEY(3),
-            ASSET_DESC(4): ASSET_KEY(4),
-            ASSET_DESC(5): ASSET_KEY(5),
-            ASSET_DESC(6): ASSET_KEY(6),
-            ASSET_DESC(7): ASSET_KEY(7),
-            ASSET_DESC(8): ASSET_KEY(8),
-            ASSET_DESC(9): ASSET_KEY(9),
-            ASSET_DESC(10): ASSET_KEY(10),
-        };
+        balances = [@{
+            ASSET_KEY: @0.0,
+        } mutableCopy];
 
         defaultExchange = [defaults objectForKey:DEFAULT_EXCHANGE];
 
@@ -184,8 +138,22 @@
         tickerDictionary = [exchange ticker:fiatCurrencies];
         currentRatings = [[NSMutableDictionary alloc] init];
 
-        for (id key in tickerKeys) {
-            currentRatings[key] = tickerDictionary[tickerKeys[key]][DEFAULT_LAST];
+        for (id key in tickerDictionary) {
+            if ([[key componentsSeparatedByString:@"_"][0] isEqualToString:ASSET_KEY]) {
+                currentRatings[key] = tickerDictionary[key][DEFAULT_LAST];
+            }
+        }
+
+        if (initialRatings == nil) {
+            NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+            initialRatings = [[defaults objectForKey:KEY_INITIAL_RATINGS] mutableCopy];
+            if (initialRatings == nil) {
+                initialRatings = currentRatings;
+                [defaults setObject:initialRatings forKey:KEY_INITIAL_RATINGS];
+
+                [defaults synchronize];
+            }
         }
 
         NSMutableDictionary *result = [[exchange balance:[self apiKey]] mutableCopy];
@@ -230,7 +198,8 @@
 - (double)btcPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::btcPriceForAsset:%@", asset);
 
-    if ([asset isEqualToString:ASSET_KEY(1)]) { return 1; }
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    if ([asset isEqualToString:masterKey]) { return 1; }
     return [currentRatings[asset] doubleValue];
 }
 
@@ -256,14 +225,41 @@
 - (double)fiatPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::fiatPriceForAsset:%@", asset);
 
-    double fiatPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    double fiatPrice = [currentRatings[masterKey] doubleValue];
     double assetPrice = [self btcPriceForAsset:asset];
 
-    if ([asset isEqualToString:ASSET_KEY(1)]) {
+    if ([asset isEqualToString:masterKey]) {
         return fiatPrice;
     }
 
     return fiatPrice * assetPrice;
+}
+
+/**
+ * Calculate the BTC Price from a given FiatPrice
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)fiat2BTC:(double)fiatPrice {
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    double btcPrice = [currentRatings[masterKey] doubleValue];
+
+    return fiatPrice / btcPrice;
+}
+
+/**
+ * Calculate the Fiat Price from a given BTC Price
+ *
+ * @param fiatPrice double
+ * @return double
+ */
+- (double)btc2Fiat:(double)btcPrice {
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    double fiatPrice = 1 / [currentRatings[masterKey] doubleValue];
+
+    return btcPrice / fiatPrice;
 }
 
 /**
@@ -293,62 +289,26 @@
         }
     }
 
-    double asset1Rating = [ratings[ASSET_KEY(1)] doubleValue];
-    double asset2Rating = [ratings[ASSET_KEY(2)] doubleValue];
-    double asset3Rating = [ratings[ASSET_KEY(3)] doubleValue];
-    double asset4Rating = [ratings[ASSET_KEY(4)] doubleValue];
-    double asset5Rating = [ratings[ASSET_KEY(5)] doubleValue];
+    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
+    double asset1Rating = [ratings[masterKey] doubleValue];
+    double price1 = [balances[ASSET_KEY] doubleValue] * asset1Rating;
 
-    double asset6Rating = [ratings[ASSET_KEY(6)] doubleValue];
-    double asset7Rating = [ratings[ASSET_KEY(7)] doubleValue];
-    double asset8Rating = [ratings[ASSET_KEY(8)] doubleValue];
-    double asset9Rating = [ratings[ASSET_KEY(9)] doubleValue];
-    double asset10Rating = [ratings[ASSET_KEY(10)] doubleValue];
+    double sum = price1;
+    for (id key in ratings) {
+        if (![key isEqualToString:masterKey]) {
+            NSString *asset = [key componentsSeparatedByString:@"_"][1];
+            double assetRating = [ratings[key] doubleValue];
+            double price = asset1Rating * [balances[asset] doubleValue] * assetRating;
 
-    double price1 = [balances[ASSET_KEY(1)] doubleValue] * asset1Rating;
-    double price2 = asset1Rating * [balances[ASSET_KEY(2)] doubleValue] * asset2Rating;
-    double price3 = asset1Rating * [balances[ASSET_KEY(3)] doubleValue] * asset3Rating;
-    double price4 = asset1Rating * [balances[ASSET_KEY(4)] doubleValue] * asset4Rating;
-    double price5 = asset1Rating * [balances[ASSET_KEY(5)] doubleValue] * asset5Rating;
+            sum += price;
+        }
+    }
 
-    double price6 = asset1Rating * [balances[ASSET_KEY(6)] doubleValue] * asset6Rating;
-    double price7 = asset1Rating * [balances[ASSET_KEY(7)] doubleValue] * asset7Rating;
-    double price8 = asset1Rating * [balances[ASSET_KEY(8)] doubleValue] * asset8Rating;
-    double price9 = asset1Rating * [balances[ASSET_KEY(9)] doubleValue] * asset9Rating;
-    double price10 = asset1Rating * [balances[ASSET_KEY(10)] doubleValue] * asset10Rating;
-
-    // prices in eur
-    double sum = price1 + price2 + price3 + price4 + price5 + price6 + price7 + price8 + price9 + price10;
-
-    if ([currency isEqualToString:ASSET_KEY(1)]) {
+    if ([currency isEqualToString:masterKey]) {
         return sum / asset1Rating;
     }
 
     return [self fiat2BTC:sum] / [ratings[currency] doubleValue];
-}
-
-/**
- * Calculate the BTC Price from a given FiatPrice
- *
- * @param fiatPrice double
- * @return double
- */
-- (double)fiat2BTC:(double)fiatPrice {
-    double btcPrice = [currentRatings[ASSET_KEY(1)] doubleValue];
-
-    return fiatPrice / btcPrice;
-}
-
-/**
- * Calculate the Fiat Price from a given BTC Price
- *
- * @param fiatPrice double
- * @return double
- */
-- (double)btc2Fiat:(double)btcPrice {
-    double fiatPrice = 1 / [currentRatings[ASSET_KEY(1)] doubleValue];
-
-    return btcPrice / fiatPrice;
 }
 
 /**
@@ -423,35 +383,11 @@
 }
 
 /**
- * Get current Balances
- * @return NSMutableDictionary*
- */
-- (NSMutableDictionary *)balances {
-    return balances;
-}
-
-/**
  * Get current Balance for asset
  * @return double*
  */
 - (double)balance:(NSString *)asset {
     return [balances[asset] doubleValue];
-}
-
-/**
- * Get the initial ratings
- * @return NSDictionary*
- */
-- (NSMutableDictionary *)initialRatings {
-    return initialRatings;
-}
-
-/**
- * Get current Ratings
- * @return NSDictionary*
- */
-- (NSMutableDictionary *)currentRatings {
-    return currentRatings;
 }
 
 /**

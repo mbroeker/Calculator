@@ -70,6 +70,13 @@
 - (void)sellWithProfitInEuro:(double)wantedEuros;
 
 /**
+ * Sell Altcoins with an Exchange-Rate of "wantedPercent" or more
+ *
+ * @param wantedPercent double
+ */
+- (void)sellWithProfitInPercent:(double)wantedPercent;
+
+/**
  * Sell Altcoins with an investment Rate of wantedPercent or more
  *
  * @param wantedPercent double
