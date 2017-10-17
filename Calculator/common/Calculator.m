@@ -135,7 +135,12 @@
 - (void)updateRatings {
     dispatch_queue_t updateQueue = dispatch_queue_create("de.4customers.calculator.updateRatings", nil);
     dispatch_sync(updateQueue, ^{
-        tickerDictionary = [exchange ticker:fiatCurrencies];
+        NSDictionary *tickerData =[exchange ticker:fiatCurrencies];
+
+        // NO DATA - NO UPDATE
+        if (tickerData == nil) { return; }
+
+        tickerDictionary = tickerData;
         currentRatings = [[NSMutableDictionary alloc] init];
 
         for (id key in tickerDictionary) {
