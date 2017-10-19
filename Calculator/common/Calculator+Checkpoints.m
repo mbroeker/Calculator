@@ -17,7 +17,7 @@
  * @param btcUpdate BOOL
  */
 - (void)updateCheckpointForAsset:(NSString *)asset withBTCUpdate:(BOOL)btcUpdate {
-    return [self updateCheckpointForAsset:asset withBTCUpdate:btcUpdate andRate:0.0];
+    [self updateCheckpointForAsset:asset withBTCUpdate:btcUpdate andRate:0.0];
 }
 
 /**
@@ -38,17 +38,15 @@
         return;
     }
 
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, self.fiatCurrencies[0]];
-
     if ([asset isEqualToString:DASHBOARD]) {
         self.initialRatings = [self.currentRatings mutableCopy];
     } else {
         // aktualisiere den Kurs der Währung
         self.initialRatings[asset] = ((wantedRate == 0.0) ? self.currentRatings[asset] : @(wantedRate));
 
-        if (![asset isEqualToString:masterKey] && btcUpdate) {
+        if (![asset isEqualToString:self.masterKey] && btcUpdate) {
             // aktualisiere den BTC Kurs, auf den sich die Transaktion bezog
-            self.initialRatings[masterKey] = self.currentRatings[masterKey];
+            self.initialRatings[self.masterKey] = self.currentRatings[self.masterKey];
         }
     }
 

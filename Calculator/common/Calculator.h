@@ -185,8 +185,16 @@
 
 /**
  * Minimize access to the Keychain
+ * @return NSDictionary with elements KEY,SECRET
  */
 - (NSDictionary *)apiKey;
+
+/**
+ * Returns the current Master Key (BTC, ETH, XMR) for the market
+ *
+ * @return NSString*
+ */
+- (NSString *)masterKey;
 
 /**
  * Reset the app

@@ -144,7 +144,7 @@
         currentRatings = [[NSMutableDictionary alloc] init];
 
         for (id key in tickerDictionary) {
-            if ([[key componentsSeparatedByString:@"_"][0] isEqualToString:ASSET_KEY]) {
+            if ([key containsString:ASSET_KEY]) {
                 currentRatings[key] = tickerDictionary[key][DEFAULT_LAST];
             }
         }
@@ -203,8 +203,7 @@
 - (double)btcPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::btcPriceForAsset:%@", asset);
 
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
-    if ([asset isEqualToString:masterKey]) { return 1; }
+    if ([asset isEqualToString:self.masterKey]) { return 1; }
     return [currentRatings[asset] doubleValue];
 }
 
@@ -230,11 +229,10 @@
 - (double)fiatPriceForAsset:(NSString *)asset {
     NSDebug(@"Calculator::fiatPriceForAsset:%@", asset);
 
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
-    double fiatPrice = [currentRatings[masterKey] doubleValue];
+    double fiatPrice = [currentRatings[self.masterKey] doubleValue];
     double assetPrice = [self btcPriceForAsset:asset];
 
-    if ([asset isEqualToString:masterKey]) {
+    if ([asset isEqualToString:self.masterKey]) {
         return fiatPrice;
     }
 
@@ -248,8 +246,9 @@
  * @return double
  */
 - (double)fiat2BTC:(double)fiatPrice {
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
-    double btcPrice = [currentRatings[masterKey] doubleValue];
+    NSDebug(@"Calculator::fiat2BTC:%.4f", fiatPrice);
+
+    double btcPrice = [currentRatings[self.masterKey] doubleValue];
 
     return fiatPrice / btcPrice;
 }
@@ -261,8 +260,9 @@
  * @return double
  */
 - (double)btc2Fiat:(double)btcPrice {
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
-    double fiatPrice = 1 / [currentRatings[masterKey] doubleValue];
+    NSDebug(@"Calculator::fiat2BTC:%.8f", btcPrice);
+
+    double fiatPrice = 1 / [currentRatings[self.masterKey] doubleValue];
 
     return btcPrice / fiatPrice;
 }
@@ -285,7 +285,6 @@
  * @return double
  */
 - (double)calculateWithRatings:(NSDictionary *)ratings currency:(NSString *)currency {
-    NSDebug(@"Calculator::calculateWithRatings:%@ currency:%@", ratings, currency);
 
     for (id key in ratings) {
         if ([Calculator zeroNanOrInfinity:[ratings[key] doubleValue]]) {
@@ -294,13 +293,14 @@
         }
     }
 
-    NSString *masterKey = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, fiatCurrencies[0]];
-    double asset1Rating = [ratings[masterKey] doubleValue];
+    NSDebug(@"Calculator::calculateWithRatings:%@ currency:%@", ratings, currency);
+
+    double asset1Rating = [ratings[self.masterKey] doubleValue];
     double price1 = [balances[ASSET_KEY] doubleValue] * asset1Rating;
 
     double sum = price1;
     for (id key in ratings) {
-        if (![key isEqualToString:masterKey]) {
+        if (![key isEqualToString:self.masterKey]) {
             NSString *asset = [key componentsSeparatedByString:@"_"][1];
             double assetRating = [ratings[key] doubleValue];
             double price = asset1Rating * [balances[asset] doubleValue] * assetRating;
@@ -309,7 +309,7 @@
         }
     }
 
-    if ([currency isEqualToString:masterKey]) {
+    if ([currency isEqualToString:self.masterKey]) {
         return sum / asset1Rating;
     }
 
@@ -333,6 +333,8 @@
  * @return Broker
  */
 - (id)broker {
+    NSDebug(@"Calculator::broker");
+
     return broker;
 }
 
@@ -412,6 +414,17 @@
     }
 
     return keyAndSecret;
+}
+
+/**
+ * Returns the current Master Key (BTC, ETH, XMR) for the market
+ *
+ * @return NSString*
+ */
+- (NSString *)masterKey {
+    NSDebug(@"Calculator::masterKey");
+
+    return [NSString stringWithFormat:@"%@_%@", fiatCurrencies[0], ASSET_KEY];
 }
 
 /**

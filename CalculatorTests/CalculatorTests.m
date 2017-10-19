@@ -44,9 +44,12 @@
  * Check the computation
  */
 - (void)testFiatPrice {
+    NSString *fiatCurrency = [calculator fiatCurrencies][0];
+
     for (id key in [calculator currentRatings]) {
         double fiatPrice = [calculator fiatPriceForAsset:key];
-        NSLog(@"1 %@ = %.8f %@", key, fiatPrice, [calculator fiatCurrencies][0]);
+        NSString *asset = [key componentsSeparatedByString:@"_"][1];
+        NSLog(@"1 %@ = %.8f %@", asset, fiatPrice, fiatCurrency);
     }
 }
 
