@@ -152,10 +152,16 @@
 
     // Bei 0 gibts eine Kaufbestätigung, bei < 0 wird instant gekauft
     if (wantedAmount >= 0) {
-        __block BOOL abort = NO;
+
+        if ([NSThread isMainThread]) {
+            [Helper notificationText:@"ILLEGAL STATE" info:@"DISPATCHING IS NOT POSSIBLE IN MAINQUEUE"];
+            return nil;
+        }
+
+        __block BOOL abort = YES;
         dispatch_sync(dispatch_get_main_queue(), ^() {
             if ([Helper messageText:@"ORDER CONFIRMATION" info:text] == NSAlertFirstButtonReturn) {
-                abort = YES;
+                abort = NO;
             }
         });
 
@@ -255,13 +261,18 @@
 
     NSString *text = [NSString stringWithFormat:@"Sell %.4f %@ for %.8f each", amount, assetKey, cRate];
 
-
     // Bei 0 gibts eine Verkaufsbestätigung, bei < 0 wird instant gekauft
     if (wantedAmount >= 0) {
-        __block BOOL abort = NO;
+        __block BOOL abort = YES;
+
+        if ([NSThread isMainThread]) {
+            [Helper notificationText:@"ILLEGAL STATE" info:@"DISPATCHING IS NOT POSSIBLE IN MAINQUEUE"];
+            return nil;
+        }
+
         dispatch_sync(dispatch_get_main_queue(), ^() {
             if ([Helper messageText:@"ORDER CONFIRMATION" info:text] == NSAlertFirstButtonReturn) {
-                abort = YES;
+                abort = NO;
             }
         });
 
