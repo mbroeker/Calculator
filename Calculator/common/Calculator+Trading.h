@@ -110,4 +110,10 @@
  */
 - (void)buyTheWorst;
 
+/**
+ * Sell the current altcoin when another coin is "wantedPercent" more worse...
+ *
+ */
+- (void)sellForTheWorst:(double)wantedPercent;
+
 @end

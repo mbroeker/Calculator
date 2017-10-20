@@ -535,4 +535,46 @@
     }
 }
 
+/**
+ * SellTheWorst: Kaufe blind die am niedrigsten bewertete Asset
+ *
+ */
+- (void)sellForTheWorst:(double)wantedPercent {
+    NSDebug(@"Calculator::sellForTheWorst:%.2f", wantedPercent);
+
+    NSDictionary *currencyUnits = [self checkpointChanges];
+    NSNumber *lowest = [[currencyUnits allValues] valueForKeyPath:@"@min.self"];
+
+    if (lowest == nil) {
+        return;
+    }
+
+    NSString *masterKey = [self masterKey];
+    NSString *lowestKey = [currencyUnits allKeysForObject:lowest][0];
+
+    for (id key in self.balances) {
+        NSString *asset = [NSString stringWithFormat:@"%@_%@", ASSET_KEY, key];
+
+        if ([key isEqualToString:ASSET_KEY]) { continue; }
+        if ([asset isEqualToString:masterKey]) { continue; }
+
+        double balance = [self.balances[key] doubleValue];
+        double btcValue =  balance * [self btcPriceForAsset:asset];
+
+        if (btcValue > 0.00050000 ) {
+            NSDictionary *currentCheckpoint = [self checkpointForAsset:asset];
+            NSDictionary *worstCheckpoint = [self checkpointForAsset:lowestKey];
+
+            double currentPercent = [currentCheckpoint[CP_PERCENT] doubleValue];
+            double worstPercent = [worstCheckpoint[CP_PERCENT] doubleValue];
+
+            double percent = currentPercent - worstPercent;
+
+            if (percent > wantedPercent) {
+                [self autoSellAll:asset];
+            }
+        }
+    }
+}
+
 @end
